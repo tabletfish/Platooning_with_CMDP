@@ -12,13 +12,13 @@
 git clone https://github.com/tabletfish/Platooning_with_CMDP.git
 pip install -r requirements.txt
 
-##터미널2
-# (선택) ROS2 환경변수가 기본 세팅이 안 되어 있다면 아래 명령어를 먼저 칩니다.
-# source /opt/ros/humble/setup.bash 
+## 터미널2
+(선택) ROS2 환경변수가 기본 세팅이 안 되어 있다면 아래 명령어를 먼저 칩니다.
+source /opt/ros/humble/setup.bash 
 
 cd ~/Platooning_with_CMDP
 python carla_bridge.py
 
-#터미널3
+## 터미널3
 cd ~/Platooning_with_CMDP
 python main.py

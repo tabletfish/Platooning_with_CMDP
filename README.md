@@ -8,18 +8,18 @@
 - **미들웨어**: ROS2 (동기화 0.05s Tick)
 - **비교군**: Longitudinal PID Controller
 
-## 🚀 터미널1 - 설치
+##  설치
 git clone (주소)
 
 pip install -r requirements.txt
 
 
-## 🚀 터미널2 - Calra실행
+## 🚀 터미널1 - Calra실행
 cd ~/carla_0.9.16/
 
 ./CarlaUE4.sh    			 
 
-## 🚀 터미널3 - bridge
+## 🚀 터미널2 - bridge
 (선택) ROS2 환경변수가 기본 세팅이 안 되어 있다면 아래 명령어를 먼저 칩니다.
 
 source /opt/ros/humble/setup.bash 
@@ -28,7 +28,7 @@ cd ~/Platooning_with_CMDP
 
 python carla_bridge.py
 
-## 🚀 터미널4 - 학습 스크립트 on
+## 🚀 터미널3 - 학습 스크립트 on
 cd ~/Platooning_with_CMDP
 
 python main.py

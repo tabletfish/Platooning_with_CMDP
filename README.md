@@ -9,7 +9,7 @@
 - **비교군**: Longitudinal PID Controller
 
 ## 🚀 터미널1 - 설치
-git clone https://github.com/tabletfish/Platooning_with_CMDP.git
+git clone (주소)
 pip install -r requirements.txt
 
 ## 🚀 터미널2 - Calra 실행

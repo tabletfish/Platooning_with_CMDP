@@ -2,6 +2,7 @@
 torch>=2.0.0
 omnisafe>=0.5.0
 gymnasium==0.28.1
+safety-gymnasium==0.4.1
 
 # Simulation
 carla==0.9.16

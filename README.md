@@ -26,7 +26,7 @@ source /opt/ros/humble/setup.bash
 
 cd ~/Platooning_with_CMDP
 
-python carla_bridge.py
+python3 carla_bridge.py
 
 ## 🚀 터미널3 - 학습 스크립트 on
 cd ~/Platooning_with_CMDP

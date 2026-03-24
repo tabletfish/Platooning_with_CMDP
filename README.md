@@ -10,10 +10,12 @@
 
 ## 🚀 터미널1 - 설치
 git clone (주소)
+
 pip install -r requirements.txt
 
 ## 🚀 터미널2 - Calra 실행
 (선택) ROS2 환경변수가 기본 세팅이 안 되어 있다면 아래 명령어를 먼저 칩니다.
+
 source /opt/ros/humble/setup.bash 
 
 cd ~/Platooning_with_CMDP

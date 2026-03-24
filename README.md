@@ -31,4 +31,4 @@ python3 carla_bridge.py
 ## 🚀 터미널3 - 학습 스크립트 on
 cd ~/Platooning_with_CMDP
 
-python main.py
+python3 main.py

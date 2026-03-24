@@ -9,6 +9,16 @@
 - **비교군**: Longitudinal PID Controller
 
 ## 🚀 설치 방법
-```bash
+git clone https://github.com/tabletfish/Platooning_with_CMDP.git
 pip install -r requirements.txt
-# (주의: ROS2 Humble 또는 Foxy 설치 및 source 환경 설정이 사전 요구됩니다.)
+
+##터미널2
+# (선택) ROS2 환경변수가 기본 세팅이 안 되어 있다면 아래 명령어를 먼저 칩니다.
+# source /opt/ros/humble/setup.bash 
+
+cd ~/Platooning_with_CMDP
+python carla_bridge.py
+
+#터미널3
+cd ~/Platooning_with_CMDP
+python main.py

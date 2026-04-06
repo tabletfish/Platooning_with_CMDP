@@ -38,6 +38,7 @@ def main() -> None:
     print("PlatoonSafe-v0 PPOLag training")
     print("ROS mode:", os.getenv("PLATOON_USE_ROS", "0"))
     print("Total steps:", custom_cfgs["train_cfgs"]["total_steps"])
+    print("Cost limit:", custom_cfgs["lagrange_cfgs"]["cost_limit"])
     print("======================================================")
 
     agent = omnisafe.Agent(

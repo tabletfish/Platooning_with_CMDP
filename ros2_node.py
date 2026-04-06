@@ -5,7 +5,7 @@ import time
 
 import rclpy
 from rclpy.node import Node
-from std_msgs.msg import Float32MultiArray
+from std_msgs.msg import Empty, Float32MultiArray
 
 
 class PlatoonROS2Node(Node):
@@ -17,6 +17,11 @@ class PlatoonROS2Node(Node):
         self.control_pub = self.create_publisher(
             Float32MultiArray,
             f"{topic_prefix}/vehicle_control",
+            10,
+        )
+        self.reset_pub = self.create_publisher(
+            Empty,
+            "/carla/platoon/reset",
             10,
         )
         self.state_sub = self.create_subscription(
@@ -34,11 +39,15 @@ class PlatoonROS2Node(Node):
             "lat_offset": 0.0,
         }
         self.data_received = False
+        self.last_msg_time = 0.0
 
     def publish_control(self, throttle: float, brake: float) -> None:
         msg = Float32MultiArray()
         msg.data = [float(throttle), float(brake), 0.0]
         self.control_pub.publish(msg)
+
+    def publish_reset(self) -> None:
+        self.reset_pub.publish(Empty())
 
     def state_callback(self, msg: Float32MultiArray) -> None:
         data = list(msg.data)
@@ -49,13 +58,21 @@ class PlatoonROS2Node(Node):
             self.latest_data["ego_vel"] = data[3]
             self.latest_data["lat_offset"] = data[4]
         self.data_received = True
+        self.last_msg_time = time.monotonic()
 
     def get_latest_data(self) -> dict[str, float]:
         return dict(self.latest_data)
 
+    def get_latest_data_if_fresh(self, max_age: float) -> dict[str, float] | None:
+        if self.last_msg_time <= 0.0:
+            return None
+        if (time.monotonic() - self.last_msg_time) > max_age:
+            return None
+        return dict(self.latest_data)
+
     def tick_and_wait(self, dt: float = 0.05) -> bool:
         self.data_received = False
-        start_time = time.time()
-        while not self.data_received and (time.time() - start_time) < dt:
+        start_time = time.monotonic()
+        while not self.data_received and (time.monotonic() - start_time) < dt:
             rclpy.spin_once(self, timeout_sec=0.01)
         return self.data_received

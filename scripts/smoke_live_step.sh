@@ -1,10 +1,13 @@
 #!/usr/bin/env bash
 set -euo pipefail
+set +u
 source /opt/ros/humble/setup.bash
+set -u
 cd /home/jungjinwoo/Platooning_with_CMDP
+PYTHON_BIN="${PYTHON_BIN:-python3.10}"
 PLATOON_USE_ROS=1 \
 PLATOON_MAX_EPISODE_STEPS=5 \
-python3 - <<"PY"
+"$PYTHON_BIN" - <<"PY"
 import time
 import torch
 from platoon_env import PlatoonSafeEnv

@@ -1,7 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
+set +u
 source /opt/ros/humble/setup.bash
+set -u
 cd /home/jungjinwoo/Platooning_with_CMDP
+PYTHON_BIN="${PYTHON_BIN:-python3.10}"
 : "${PLATOON_USE_ROS:=1}"
 : "${PLATOON_TOTAL_STEPS:=1000000}"
 : "${PLATOON_STEPS_PER_EPOCH:=2000}"
@@ -9,4 +12,4 @@ cd /home/jungjinwoo/Platooning_with_CMDP
 : "${PLATOON_TORCH_THREADS:=4}"
 : "${PLATOON_MAX_EPISODE_STEPS:=3000}"
 export PLATOON_USE_ROS PLATOON_TOTAL_STEPS PLATOON_STEPS_PER_EPOCH PLATOON_UPDATE_ITERS PLATOON_TORCH_THREADS PLATOON_MAX_EPISODE_STEPS
-python3 main.py
+"$PYTHON_BIN" main.py

@@ -1,0 +1,39 @@
+{
+  "map": "Town04",
+  "fixed_delta_seconds": 0.05,
+  "headway": 1.0,
+  "standstill_distance": 7.0,
+  "leader_throttle": 0.35,
+  "initial_gap": 15.0,
+  "vehicles": [
+    {
+      "id": "leader",
+      "type": "vehicle.tesla.model3",
+      "role_name": "leader",
+      "ros_name": "leader",
+      "is_leader": true,
+      "spawn_point": {"x": 392.68, "y": 187.71, "z": 0.2, "roll": 0.0, "pitch": 0.0, "yaw": -90.6}
+    },
+    {
+      "id": "follower_1",
+      "type": "vehicle.tesla.model3",
+      "role_name": "follower_1",
+      "ros_name": "follower_1",
+      "spawn_point": {"x": 392.84, "y": 202.71, "z": 0.2, "roll": 0.0, "pitch": 0.0, "yaw": -90.6}
+    },
+    {
+      "id": "follower_2",
+      "type": "vehicle.tesla.model3",
+      "role_name": "follower_2",
+      "ros_name": "follower_2",
+      "spawn_point": {"x": 393.0, "y": 217.71, "z": 0.2, "roll": 0.0, "pitch": 0.0, "yaw": -90.6}
+    },
+    {
+      "id": "follower_3",
+      "type": "vehicle.tesla.model3",
+      "role_name": "follower_3",
+      "ros_name": "follower_3",
+      "spawn_point": {"x": 393.15, "y": 232.66, "z": 0.2, "roll": 0.0, "pitch": 0.0, "yaw": -90.6}
+    }
+  ]
+}

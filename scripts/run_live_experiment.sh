@@ -27,7 +27,8 @@ fi
 : "${PLATOON_EVAL_MAX_STEPS:=${PLATOON_MAX_EPISODE_STEPS}}"
 export PLATOON_USE_ROS PLATOON_TOTAL_STEPS PLATOON_STEPS_PER_EPOCH PLATOON_UPDATE_ITERS PLATOON_TORCH_THREADS PLATOON_MAX_EPISODE_STEPS PLATOON_EVAL_EPISODES PLATOON_EVAL_MAX_STEPS
 
-python3 - <<"PY"
+PYTHON_BIN="${PYTHON_BIN:-python3.10}"
+"$PYTHON_BIN" - <<"PY"
 import carla
 client = carla.Client("localhost", 2000)
 client.set_timeout(2.0)
@@ -44,7 +45,7 @@ PPO_EVAL_LOG="$LOG_DIR/ppo_eval.log"
 PID_EVAL_LOG="$LOG_DIR/pid_eval.log"
 SUMMARY_LOG="$LOG_DIR/summary.txt"
 
-python3 carlar_bridge.py > "$BRIDGE_LOG" 2>&1 &
+"$PYTHON_BIN" carla_bridge.py > "$BRIDGE_LOG" 2>&1 &
 BRIDGE_PID=$!
 cleanup() {
   kill "$BRIDGE_PID" >/dev/null 2>&1 || true
@@ -54,15 +55,15 @@ sleep 3
 
 echo "Preset: ${PLATOON_EXPERIMENT_PRESET:-manual}"
 echo "===== TRAIN PPO ====="
-python3 main.py | tee "$TRAIN_LOG"
+"$PYTHON_BIN" main.py | tee "$TRAIN_LOG"
 
 echo
 echo "===== EVAL PPO ====="
-PLATOON_EVAL_POLICY=ppo python3 evaluate.py | tee "$PPO_EVAL_LOG"
+PLATOON_EVAL_POLICY=ppo "$PYTHON_BIN" evaluate.py | tee "$PPO_EVAL_LOG"
 
 echo
 echo "===== EVAL PID ====="
-PLATOON_EVAL_POLICY=pid python3 evaluate.py | tee "$PID_EVAL_LOG"
+PLATOON_EVAL_POLICY=pid "$PYTHON_BIN" evaluate.py | tee "$PID_EVAL_LOG"
 
 {
   echo "Run ID: $RUN_ID"

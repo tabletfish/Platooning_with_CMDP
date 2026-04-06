@@ -1,97 +1,162 @@
-import rclpy
-import torch
+from __future__ import annotations
+
+import os
+from pathlib import Path
+
 import numpy as np
-import omnisafe
+import torch
 from omnisafe.evaluator import Evaluator
 
-# 다중 차량 제어를 위해 기존 ROS2 노드를 확장한 클래스가 필요합니다.
-# (가칭: MultiPlatoonROS2Node)
+import platoon_env  # noqa: F401
+from pid_controller import LongitudinalPIDController
+from platoon_env import PlatoonSafeEnv
 
-def evaluate_platoon(model_dir):
-    rclpy.init()
-    
-    # 1. 평가용 다중 차량 ROS2 노드 초기화
-    # Follower 1, 2, 3의 상태를 모두 구독하고 제어 명령을 각각 발행해야 합니다.
-    # ros2_node = MultiPlatoonROS2Node(num_followers=3)
-    
+
+def _latest_run_dir(base_dir: Path) -> Path:
+    candidates = [path for path in base_dir.iterdir() if path.is_dir() and path.name.startswith("seed-")]
+    if not candidates:
+        raise FileNotFoundError(f"No run directories found under {base_dir}")
+    return max(candidates, key=lambda path: path.stat().st_mtime)
+
+
+def _latest_model_name(run_dir: Path) -> str:
+    torch_dir = run_dir / "torch_save"
+    candidates = sorted(torch_dir.glob("epoch-*.pt"))
+    if not candidates:
+        raise FileNotFoundError(f"No checkpoints found under {torch_dir}")
+    return candidates[-1].name
+
+
+def _compute_thw(env: PlatoonSafeEnv, obs: torch.Tensor) -> float:
+    delta_d = float(obs[0].item())
+    ego_vel = float(obs[3].item())
+    desired_distance = ego_vel * env.h + env.d_0
+    actual_distance = delta_d + desired_distance
+    if ego_vel <= 0.1:
+        return float("inf")
+    return actual_distance / ego_vel
+
+
+def _build_actor(save_dir: Path | None, model_name: str | None):
+    base_dir = save_dir if save_dir is not None else Path("./runs/PPOLag-{PlatoonSafe-v0}")
+    run_dir = base_dir if (base_dir / "torch_save").exists() else _latest_run_dir(base_dir)
+    resolved_model = model_name or _latest_model_name(run_dir)
+    evaluator = Evaluator(render_mode="rgb_array")
+    evaluator.load_saved(save_dir=str(run_dir), model_name=resolved_model)
+    return evaluator._actor, run_dir, resolved_model
+
+
+def evaluate_saved(save_dir: str | None = None, model_name: str | None = None) -> dict[str, float]:
+    policy = os.getenv("PLATOON_EVAL_POLICY", "ppo").lower()
+    num_episodes = int(os.getenv("PLATOON_EVAL_EPISODES", "2"))
+    max_steps = int(os.getenv("PLATOON_EVAL_MAX_STEPS", os.getenv("PLATOON_MAX_EPISODE_STEPS", "1000")))
+
+    actor = None
+    run_dir = None
+    resolved_model = None
+    if policy == "ppo":
+        actor, run_dir, resolved_model = _build_actor(Path(save_dir) if save_dir else None, model_name)
+    elif policy != "pid":
+        raise ValueError(f"Unsupported PLATOON_EVAL_POLICY={policy}")
+
     print("======================================================")
-    print("📊 학습된 PPO-Lag 모델을 로드하여 다중 차량 평가를 시작합니다.")
-    print(f"모델 경로: {model_dir}")
+    print("PlatoonSafe-v0 custom evaluation")
+    print("Policy:", policy)
+    if run_dir is not None:
+        print("Run dir:", run_dir)
+        print("Model:", resolved_model)
+    print("ROS mode:", os.getenv("PLATOON_USE_ROS", "0"))
+    print("Episodes:", num_episodes)
+    print("Max steps:", max_steps)
     print("======================================================")
 
-    # 2. OmniSafe Evaluator를 이용해 학습된 정책(Policy) 로드
-    # render_mode를 설정하여 CARLA 시뮬레이션 화면과 연동할 수 있습니다.
-    evaluator = Evaluator(render_mode='human')
-    evaluator.load_saved(
-        save_dir=model_dir,
-        model_name='epoch-1000.pt' # 실제 저장된 모델 이름으로 변경
-    )
-    
-    # 평가 환경 파라미터 
-    num_followers = 3
-    num_episodes = 100 # 논문 기준 평가 반복 횟수 [cite: 224]
-    max_steps = 3000
-    
-    # 평가 지표 기록용 딕셔너리
-    metrics = {
-        'control_efficiency': np.zeros(num_followers),
-        'traffic_disturbance': np.zeros(num_followers),
-        'jerk_cost': np.zeros(num_followers),
-        'thw_cost': np.zeros(num_followers),
-        'caution_duration': np.zeros(num_followers),
-        'danger_duration': np.zeros(num_followers)
+    aggregate = {
+        "episode_return": [],
+        "episode_cost": [],
+        "episode_length": [],
+        "control_efficiency": [],
+        "traffic_disturbance": [],
+        "jerk_cost": [],
+        "thw_cost": [],
+        "caution_duration": [],
+        "danger_duration": [],
     }
 
-    # 3. 평가 루프 시작 (논문의 Unseen 리더 속도 프로파일 시나리오 적용)
     for episode in range(num_episodes):
-        # ros2_node.reset_simulation(scenario='unseen_profile')
-        
-        # 각 차량의 이전 가속도 저장용 (Jerk 계산)
-        prev_accels = np.zeros(num_followers)
-        
-        for step in range(max_steps):
-            # 3.1. 각 차량의 현재 상태 관측 (통신 성공 확률 p_success 반영)
-            # states = ros2_node.get_all_follower_states()
-            states = np.zeros((num_followers, 7)) # 임시 더미 데이터
-            
-            actions = np.zeros(num_followers)
-            
-            # 3.2. 단일 학습 정책(Policy)을 모든 차량에 배포(공유)하여 행동 추론
-            for i in range(num_followers):
-                obs_tensor = torch.as_tensor(states[i], dtype=torch.float32)
-                # 평가 시에는 탐험(Exploration) 노이즈 없이 결정론적(Deterministic) 행동 추출
-                action_tensor = evaluator.actor.predict(obs_tensor, deterministic=True)
-                actions[i] = action_tensor.item()
-            
-            # 3.3. 행동(a_i)을 Throttle/Brake로 변환 후 CARLA로 전송
-            throttles = np.where(actions >= 0, actions, 0.0)
-            brakes = np.where(actions < 0, -actions, 0.0)
-            # ros2_node.publish_all_controls(throttles, brakes)
-            
-            # 3.4. 0.05초 틱 진행 및 동기화 대기
-            # ros2_node.tick_and_wait(0.05)
-            
-            # 3.5. 지표(Metric) 계산 및 누적 (논문 Fig. 5 기준) 
-            for i in range(num_followers):
-                a_i = actions[i]
-                prev_a_i = prev_accels[i]
-                # THW, Control cost 등 계산 (환경 클래스의 계산식 재사용)
-                # metrics['traffic_disturbance'][i] += a_i ** 2
-                # metrics['jerk_cost'][i] += (a_i - prev_a_i) ** 2
-                # (THW가 danger 구간이면 danger_duration += 1 등)
-                
-            prev_accels = actions.copy()
-            
-    # 4. 결과 평균 계산 및 출력
-    print("\n✅ 평가 완료! 평균 지표 결과:")
-    for i in range(num_followers):
-        print(f"--- Follower {i+1} ---")
-        print(f"Control Efficiency Cost: {metrics['control_efficiency'][i] / (num_episodes * max_steps):.4f}")
-        print(f"Danger Region Duration: {metrics['danger_duration'][i] / num_episodes:.1f} steps")
+        env = PlatoonSafeEnv("PlatoonSafe-v0")
+        controller = LongitudinalPIDController(dt=env.dt)
+        obs, _ = env.reset(seed=episode)
+        prev_action = 0.0
 
-    rclpy.shutdown()
+        episode_return = 0.0
+        episode_cost = 0.0
+        control_efficiency = 0.0
+        traffic_disturbance = 0.0
+        jerk_cost = 0.0
+        thw_cost = 0.0
+        caution_duration = 0.0
+        danger_duration = 0.0
+        episode_length = 0
 
-if __name__ == '__main__':
-    # 학습된 모델이 저장된 디렉토리 경로 지정
-    model_directory = './runs/platoon_ppo_lag/PPO-Lag-{PlatoonSafe-v0}' 
-    evaluate_platoon(model_directory)
+        for _ in range(max_steps):
+            if policy == "ppo":
+                with torch.no_grad():
+                    action_tensor = actor.predict(obs, deterministic=True)
+                action = float(torch.as_tensor(action_tensor).reshape(-1)[0].item())
+            else:
+                throttle, brake = controller.compute_control(
+                    spacing_error=float(obs[0].item()),
+                    rel_vel=float(obs[1].item()),
+                )
+                action = float(throttle - brake)
+
+            next_obs, reward, cost, terminated, truncated, _ = env.step(
+                torch.tensor([action], dtype=torch.float32),
+            )
+
+            delta_d = float(next_obs[0].item())
+            delta_v = float(next_obs[1].item())
+            state_vec = np.array([delta_d, delta_v], dtype=np.float32)
+            control_efficiency += float(state_vec.T @ env.Q @ state_vec)
+            traffic_disturbance += action**2
+            jerk_cost += (action - prev_action) ** 2
+            thw_cost += float(cost.item())
+
+            thw = _compute_thw(env, next_obs)
+            if env.tau_danger < thw < env.tau_safe:
+                caution_duration += 1.0
+            elif thw <= env.tau_danger:
+                danger_duration += 1.0
+
+            episode_return += float(reward.item())
+            episode_cost += float(cost.item())
+            episode_length += 1
+            prev_action = action
+            obs = next_obs
+
+            if bool(terminated.item()) or bool(truncated.item()):
+                break
+
+        env.close()
+
+        aggregate["episode_return"].append(episode_return)
+        aggregate["episode_cost"].append(episode_cost)
+        aggregate["episode_length"].append(float(episode_length))
+        aggregate["control_efficiency"].append(control_efficiency / max(episode_length, 1))
+        aggregate["traffic_disturbance"].append(traffic_disturbance / max(episode_length, 1))
+        aggregate["jerk_cost"].append(jerk_cost / max(episode_length, 1))
+        aggregate["thw_cost"].append(thw_cost / max(episode_length, 1))
+        aggregate["caution_duration"].append(caution_duration)
+        aggregate["danger_duration"].append(danger_duration)
+
+        print(f"Episode {episode + 1}: ret={episode_return:.3f}, cost={episode_cost:.3f}, len={episode_length}")
+
+    summary = {name: float(np.mean(values)) for name, values in aggregate.items()}
+    print("Average metrics:")
+    for key, value in summary.items():
+        print(f"  {key}: {value}")
+    return summary
+
+
+if __name__ == "__main__":
+    evaluate_saved()

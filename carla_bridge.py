@@ -74,7 +74,11 @@ class CarlaPlatoonBridge(Node):
         self._fallback_kd = float(os.getenv("PLATOON_FALLBACK_KD", "0.35"))
         self._fallback_max_throttle = float(os.getenv("PLATOON_FALLBACK_MAX_THROTTLE", "0.55"))
         self._fallback_max_brake = float(os.getenv("PLATOON_FALLBACK_MAX_BRAKE", "0.65"))
-        self._rl_blend_alpha = float(os.getenv("PLATOON_RL_BLEND_ALPHA", "0.2"))
+        self._rl_blend_alpha = float(os.getenv("PLATOON_RL_BLEND_ALPHA", "1.0"))
+        self._spectator_follow = os.getenv("PLATOON_SPECTATOR_FOLLOW", "1") == "1"
+        self._spectator_distance = float(os.getenv("PLATOON_SPECTATOR_DISTANCE", "12.0"))
+        self._spectator_height = float(os.getenv("PLATOON_SPECTATOR_HEIGHT", "5.0"))
+        self._spectator_pitch = float(os.getenv("PLATOON_SPECTATOR_PITCH", "-15.0"))
 
         self.vehicles: list[carla.Actor] = []
         self._lateral_controllers: list[PIDLateralController] = []
@@ -299,6 +303,26 @@ class CarlaPlatoonBridge(Node):
         forward_candidates = waypoint.next(self._lateral_lookahead)
         return forward_candidates[0] if forward_candidates else waypoint
 
+    def _update_spectator(self, vehicle: carla.Vehicle) -> None:
+        if not self._spectator_follow or vehicle is None or not vehicle.is_alive:
+            return
+        transform = vehicle.get_transform()
+        yaw_rad = math.radians(transform.rotation.yaw)
+        offset = carla.Location(
+            x=-math.cos(yaw_rad) * self._spectator_distance,
+            y=-math.sin(yaw_rad) * self._spectator_distance,
+            z=self._spectator_height,
+        )
+        spectator_transform = carla.Transform(
+            transform.location + offset,
+            carla.Rotation(
+                pitch=self._spectator_pitch,
+                yaw=transform.rotation.yaw,
+                roll=0.0,
+            ),
+        )
+        self.world.get_spectator().set_transform(spectator_transform)
+
     def _spawn_platoon(self) -> None:
         self.get_logger().info("Spawning platoon vehicles")
         self._cleanup_existing_platoon_actors()
@@ -503,6 +527,7 @@ class CarlaPlatoonBridge(Node):
             follower_control.manual_gear_shift = False
             vehicle.apply_control(follower_control)
         self.world.tick()
+        self._update_spectator(leader_vehicle)
         self._leader_profile_step += 1
         for i in range(3):
             self.publish_state(i)

@@ -42,8 +42,8 @@ class PlatoonSafeEnv(CMDP):
         self.omega_2 = 0.25
         self.omega_3 = 0.25
         self.Q = np.array([[2.0, 0.0], [0.0, 1.0]], dtype=np.float32)
-        self.d_far = 8.0
-        self.d_close = -4.0
+        self.d_far = float(os.getenv("PLATOON_REWARD_FAR_DELTA_D", "8.0"))
+        self.d_close = float(os.getenv("PLATOON_REWARD_CLOSE_DELTA_D", "-4.0"))
         self.alpha_1 = 20.0
         self.alpha_2 = 10.0
         self.tau_safe = 1.2
@@ -72,7 +72,16 @@ class PlatoonSafeEnv(CMDP):
         self.time_since_last_comm = 0.0
         self.prev_accel = 0.0
         self._count = 0
-        self.env_spec_log = {"Env/CommFailures": 0, "Env/UnsafeSteps": 0}
+        self._episode_cost = 0.0
+        self._cost_nonzero_count = 0
+        self._min_thw = float("inf")
+        self._last_thw = float("inf")
+        self._last_actual_distance = self._initial_comm_state()["ego_vel"] * self.h + self.d_0 + self._initial_comm_state()["spacing_error"]
+        self._last_episode_cost = 0.0
+        self._last_episode_cost_nonzero_count = 0
+        self._last_episode_min_thw = float("inf")
+        self._last_episode_actual_distance = self._last_actual_distance
+        self.env_spec_log = self._initial_env_spec_log()
 
         if self.use_ros:
             self._setup_ros_node()
@@ -116,14 +125,13 @@ class PlatoonSafeEnv(CMDP):
         ego_vel = float(obs_np[3])
 
         reward = self._compute_reward(delta_d, delta_v, action_value, self.prev_accel)
-        cost = self._compute_cost(delta_d, ego_vel)
+        cost, thw = self._compute_cost(delta_d, ego_vel)
         self.prev_accel = action_value
 
         actual_distance = delta_d + ego_vel * self.h + self.d_0
         terminated = actual_distance <= self.collision_distance
         truncated = self._count >= self._max_episode_steps
-        if terminated:
-            self.env_spec_log["Env/UnsafeSteps"] += 1
+        self._track_safety_metrics(cost=cost, thw=thw, actual_distance=actual_distance, unsafe=terminated)
         obs = torch.as_tensor(obs_np, dtype=torch.float32)
         info = {
             "cost": cost,
@@ -134,6 +142,9 @@ class PlatoonSafeEnv(CMDP):
             "brake": brake,
             "time_since_last_comm": self.time_since_last_comm,
             "actual_distance": actual_distance,
+            "thw": thw,
+            "episode_cost": self._episode_cost,
+            "cost_nonzero_count": self._cost_nonzero_count,
         }
         return (
             obs,
@@ -153,9 +164,21 @@ class PlatoonSafeEnv(CMDP):
         if seed is not None:
             self.set_seed(seed)
 
+        if self._count > 0:
+            self._last_episode_cost = self._episode_cost
+            self._last_episode_cost_nonzero_count = self._cost_nonzero_count
+            self._last_episode_min_thw = self._min_thw
+            self._last_episode_actual_distance = self._last_actual_distance
+
         self._count = 0
         self.prev_accel = 0.0
         self.time_since_last_comm = 0.0
+        self._episode_cost = 0.0
+        self._cost_nonzero_count = 0
+        self._min_thw = float("inf")
+        self._last_thw = float("inf")
+        self._last_actual_distance = self._initial_comm_state()["ego_vel"] * self.h + self.d_0 + self._initial_comm_state()["spacing_error"]
+        self.env_spec_log = self._initial_env_spec_log()
         self.last_comm_data = self._initial_comm_state()
         self._mock_state = self._initial_mock_state()
         self._leader_profile = self._sample_leader_profile()
@@ -177,14 +200,41 @@ class PlatoonSafeEnv(CMDP):
         return self._max_episode_steps
 
     def spec_log(self, logger: Logger) -> None:
+        self._refresh_env_spec_log()
         logger.store(self.env_spec_log)
-        self.env_spec_log = {"Env/CommFailures": 0, "Env/UnsafeSteps": 0}
+        self.env_spec_log = self._initial_env_spec_log()
 
     def set_seed(self, seed: int) -> None:
         random.seed(seed)
         self._rng.seed(seed)
         np.random.seed(seed)
         torch.manual_seed(seed)
+
+    def _initial_env_spec_log(self) -> dict[str, float]:
+        return {
+            "Env/CommFailures": 0.0,
+            "Env/UnsafeSteps": 0.0,
+            "Env/EpisodeCost": 0.0,
+            "Env/CostNonZeroCount": 0.0,
+            "Env/MinTHW": 99.0,
+            "Env/CurrentTHW": 99.0,
+            "Env/ActualDistance": float(self._last_actual_distance),
+        }
+
+    def _refresh_env_spec_log(self) -> None:
+        episode_cost = self._episode_cost if self._count > 0 else self._last_episode_cost
+        cost_nonzero_count = self._cost_nonzero_count if self._count > 0 else self._last_episode_cost_nonzero_count
+        min_thw = self._min_thw if self._count > 0 else self._last_episode_min_thw
+        actual_distance = self._last_actual_distance if self._count > 0 else self._last_episode_actual_distance
+        self.env_spec_log.update(
+            {
+                "Env/EpisodeCost": float(episode_cost),
+                "Env/CostNonZeroCount": float(cost_nonzero_count),
+                "Env/MinTHW": float(min_thw if np.isfinite(min_thw) else 99.0),
+                "Env/CurrentTHW": float(self._last_thw if np.isfinite(self._last_thw) else 99.0),
+                "Env/ActualDistance": float(actual_distance),
+            },
+        )
 
     def _initial_comm_state(self) -> dict[str, float]:
         return {
@@ -348,7 +398,7 @@ class PlatoonSafeEnv(CMDP):
         reward = np.exp(-(self.omega_1 * r_cont + self.omega_2 * r_traf + self.omega_3 * r_jerk)) - r_penalty
         return float(reward)
 
-    def _compute_cost(self, delta_d: float, ego_vel: float) -> float:
+    def _compute_cost(self, delta_d: float, ego_vel: float) -> tuple[float, float]:
         delta_d = 0.0 if not np.isfinite(delta_d) else delta_d
         ego_vel = 0.0 if not np.isfinite(ego_vel) else ego_vel
         d_ctg = ego_vel * self.h + self.d_0
@@ -356,13 +406,25 @@ class PlatoonSafeEnv(CMDP):
         thw = actual_distance / ego_vel if ego_vel > 0.1 else float("inf")
 
         if thw >= self.tau_safe:
-            cost = 0.0
+            thw_cost = 0.0
         elif thw <= self.tau_danger:
-            cost = 1.0
+            thw_cost = 1.0
         else:
             ratio = (self.tau_safe - thw) / (self.tau_safe - self.tau_danger)
-            cost = ratio**2
-        return float(cost)
+            thw_cost = ratio**2
+
+        return float(thw_cost), float(thw)
+
+    def _track_safety_metrics(self, *, cost: float, thw: float, actual_distance: float, unsafe: bool) -> None:
+        self._episode_cost += float(cost)
+        self._last_thw = thw
+        self._last_actual_distance = actual_distance
+        if np.isfinite(thw):
+            self._min_thw = min(self._min_thw, thw)
+        if cost > 0.0:
+            self._cost_nonzero_count += 1
+        if unsafe or (np.isfinite(thw) and thw <= self.tau_danger):
+            self.env_spec_log["Env/UnsafeSteps"] += 1
 
     def render(self) -> Any:
         return None

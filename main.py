@@ -16,6 +16,17 @@ def _env_float(name: str, default: float) -> float:
 
 
 def main() -> None:
+    steps_per_epoch = _env_int("PLATOON_STEPS_PER_EPOCH", 2000)
+    max_episode_steps = _env_int("PLATOON_MAX_EPISODE_STEPS", 1000)
+    if max_episode_steps > steps_per_epoch:
+        print(
+            "Adjusting PLATOON_MAX_EPISODE_STEPS from "
+            f"{max_episode_steps} to {steps_per_epoch} so PPOLag has "
+            "at least one completed episode before each update.",
+        )
+        max_episode_steps = steps_per_epoch
+        os.environ["PLATOON_MAX_EPISODE_STEPS"] = str(max_episode_steps)
+
     custom_cfgs = {
         "train_cfgs": {
             "total_steps": _env_int("PLATOON_TOTAL_STEPS", 1000000),
@@ -23,7 +34,7 @@ def main() -> None:
             "torch_threads": _env_int("PLATOON_TORCH_THREADS", 4),
         },
         "algo_cfgs": {
-            "steps_per_epoch": _env_int("PLATOON_STEPS_PER_EPOCH", 2000),
+            "steps_per_epoch": steps_per_epoch,
             "update_iters": _env_int("PLATOON_UPDATE_ITERS", 10),
         },
         "lagrange_cfgs": {

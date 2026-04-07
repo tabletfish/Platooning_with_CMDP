@@ -62,6 +62,7 @@ class PlatoonSafeEnv(CMDP):
         self.lat_offset_clip = float(os.getenv("PLATOON_LAT_OFFSET_CLIP", "5.0"))
 
         self.use_ros = os.getenv("PLATOON_USE_ROS", "0") == "1"
+        self.reset_carla_on_env_reset = os.getenv("PLATOON_RESET_CARLA_ON_ENV_RESET", "1") == "1"
         self._ros_node = None
         self._owns_rclpy = False
         self._rng = random.Random()
@@ -182,7 +183,7 @@ class PlatoonSafeEnv(CMDP):
         self.last_comm_data = self._initial_comm_state()
         self._mock_state = self._initial_mock_state()
         self._leader_profile = self._sample_leader_profile()
-        if self._ros_node is not None:
+        if self._ros_node is not None and self.reset_carla_on_env_reset:
             self._ros_node.publish_reset()
             self._ros_node.tick_and_wait(self.dt)
         obs = torch.as_tensor(

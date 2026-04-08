@@ -1,0 +1,450 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<OpenSCENARIO>
+  <FileHeader revMajor="1" revMinor="0" date="2026-04-08T00:00:00" description="Platoon longitudinal repeated braking for RL" author="Platooning_with_CMDP"/>
+  <CatalogLocations/>
+  <RoadNetwork>
+    <LogicFile filepath="Town04"/>
+    <SceneGraphFile filepath=""/>
+  </RoadNetwork>
+  <Entities>
+    <ScenarioObject name="leader">
+      <Vehicle name="vehicle.tesla.model3" vehicleCategory="car">
+        <Performance maxSpeed="69.444" maxAcceleration="10.0" maxDeceleration="10.0"/>
+        <BoundingBox>
+          <Center x="1.5" y="0.0" z="0.9"/>
+          <Dimensions width="2.1" length="4.8" height="1.8"/>
+        </BoundingBox>
+        <Axles>
+          <FrontAxle maxSteering="0.5" wheelDiameter="0.6" trackWidth="1.8" positionX="3.1" positionZ="0.3"/>
+          <RearAxle maxSteering="0.0" wheelDiameter="0.6" trackWidth="1.8" positionX="0.0" positionZ="0.3"/>
+        </Axles>
+        <Properties>
+          <Property name="type" value="simulation"/>
+          <Property name="role_name" value="leader"/>
+          <Property name="ros_name" value="leader"/>
+          <Property name="color" value="255,0,0"/>
+        </Properties>
+      </Vehicle>
+    </ScenarioObject>
+    <ScenarioObject name="follower_1">
+      <Vehicle name="vehicle.tesla.model3" vehicleCategory="car">
+        <Performance maxSpeed="69.444" maxAcceleration="10.0" maxDeceleration="10.0"/>
+        <BoundingBox>
+          <Center x="1.5" y="0.0" z="0.9"/>
+          <Dimensions width="2.1" length="4.8" height="1.8"/>
+        </BoundingBox>
+        <Axles>
+          <FrontAxle maxSteering="0.5" wheelDiameter="0.6" trackWidth="1.8" positionX="3.1" positionZ="0.3"/>
+          <RearAxle maxSteering="0.0" wheelDiameter="0.6" trackWidth="1.8" positionX="0.0" positionZ="0.3"/>
+        </Axles>
+        <Properties>
+          <Property name="type" value="simulation"/>
+          <Property name="role_name" value="follower_1"/>
+          <Property name="ros_name" value="follower_1"/>
+          <Property name="color" value="0,0,255"/>
+        </Properties>
+      </Vehicle>
+    </ScenarioObject>
+    <ScenarioObject name="follower_2">
+      <Vehicle name="vehicle.tesla.model3" vehicleCategory="car">
+        <Performance maxSpeed="69.444" maxAcceleration="10.0" maxDeceleration="10.0"/>
+        <BoundingBox>
+          <Center x="1.5" y="0.0" z="0.9"/>
+          <Dimensions width="2.1" length="4.8" height="1.8"/>
+        </BoundingBox>
+        <Axles>
+          <FrontAxle maxSteering="0.5" wheelDiameter="0.6" trackWidth="1.8" positionX="3.1" positionZ="0.3"/>
+          <RearAxle maxSteering="0.0" wheelDiameter="0.6" trackWidth="1.8" positionX="0.0" positionZ="0.3"/>
+        </Axles>
+        <Properties>
+          <Property name="type" value="simulation"/>
+          <Property name="role_name" value="follower_2"/>
+          <Property name="ros_name" value="follower_2"/>
+          <Property name="color" value="0,128,255"/>
+        </Properties>
+      </Vehicle>
+    </ScenarioObject>
+    <ScenarioObject name="follower_3">
+      <Vehicle name="vehicle.tesla.model3" vehicleCategory="car">
+        <Performance maxSpeed="69.444" maxAcceleration="10.0" maxDeceleration="10.0"/>
+        <BoundingBox>
+          <Center x="1.5" y="0.0" z="0.9"/>
+          <Dimensions width="2.1" length="4.8" height="1.8"/>
+        </BoundingBox>
+        <Axles>
+          <FrontAxle maxSteering="0.5" wheelDiameter="0.6" trackWidth="1.8" positionX="3.1" positionZ="0.3"/>
+          <RearAxle maxSteering="0.0" wheelDiameter="0.6" trackWidth="1.8" positionX="0.0" positionZ="0.3"/>
+        </Axles>
+        <Properties>
+          <Property name="type" value="simulation"/>
+          <Property name="role_name" value="follower_3"/>
+          <Property name="ros_name" value="follower_3"/>
+          <Property name="color" value="0,255,128"/>
+        </Properties>
+      </Vehicle>
+    </ScenarioObject>
+  </Entities>
+  <Storyboard>
+    <Init>
+      <Actions>
+        <GlobalAction>
+          <EnvironmentAction>
+            <Environment name="ClearNoon">
+              <TimeOfDay animation="false" dateTime="2026-04-08T12:00:00"/>
+              <Weather cloudState="free">
+                <Sun intensity="1.0" azimuth="0.0" elevation="1.31"/>
+                <Fog visualRange="100000.0"/>
+                <Precipitation precipitationType="dry" intensity="0.0"/>
+              </Weather>
+              <RoadCondition frictionScaleFactor="1.0"/>
+            </Environment>
+          </EnvironmentAction>
+        </GlobalAction>
+        <Private entityRef="leader">
+          <PrivateAction>
+            <TeleportAction>
+              <Position>
+                <WorldPosition x="392.680" y="-187.710" z="0.200" h="1.581268"/>
+              </Position>
+            </TeleportAction>
+          </PrivateAction>
+          <PrivateAction>
+            <LongitudinalAction>
+              <SpeedAction>
+                <SpeedActionDynamics dynamicsShape="step" value="0.1" dynamicsDimension="time"/>
+                <SpeedActionTarget>
+                  <AbsoluteTargetSpeed value="0.0"/>
+                </SpeedActionTarget>
+              </SpeedAction>
+            </LongitudinalAction>
+          </PrivateAction>
+        </Private>
+        <Private entityRef="follower_1">
+          <PrivateAction>
+            <TeleportAction>
+              <Position>
+                <WorldPosition x="392.799" y="-199.087" z="0.200" h="1.581268"/>
+              </Position>
+            </TeleportAction>
+          </PrivateAction>
+          <PrivateAction>
+            <LongitudinalAction>
+              <SpeedAction>
+                <SpeedActionDynamics dynamicsShape="step" value="0.1" dynamicsDimension="time"/>
+                <SpeedActionTarget>
+                  <AbsoluteTargetSpeed value="0.0"/>
+                </SpeedActionTarget>
+              </SpeedAction>
+            </LongitudinalAction>
+          </PrivateAction>
+        </Private>
+        <Private entityRef="follower_2">
+          <PrivateAction>
+            <TeleportAction>
+              <Position>
+                <WorldPosition x="392.915" y="-210.118" z="0.200" h="1.581268"/>
+              </Position>
+            </TeleportAction>
+          </PrivateAction>
+          <PrivateAction>
+            <LongitudinalAction>
+              <SpeedAction>
+                <SpeedActionDynamics dynamicsShape="step" value="0.1" dynamicsDimension="time"/>
+                <SpeedActionTarget>
+                  <AbsoluteTargetSpeed value="0.0"/>
+                </SpeedActionTarget>
+              </SpeedAction>
+            </LongitudinalAction>
+          </PrivateAction>
+        </Private>
+        <Private entityRef="follower_3">
+          <PrivateAction>
+            <TeleportAction>
+              <Position>
+                <WorldPosition x="393.016" y="-219.800" z="0.200" h="1.581268"/>
+              </Position>
+            </TeleportAction>
+          </PrivateAction>
+          <PrivateAction>
+            <LongitudinalAction>
+              <SpeedAction>
+                <SpeedActionDynamics dynamicsShape="step" value="0.1" dynamicsDimension="time"/>
+                <SpeedActionTarget>
+                  <AbsoluteTargetSpeed value="0.0"/>
+                </SpeedActionTarget>
+              </SpeedAction>
+            </LongitudinalAction>
+          </PrivateAction>
+        </Private>
+      </Actions>
+    </Init>
+    <Story name="PlatoonStory">
+      <Act name="RepeatedBrakeAct">
+        <ManeuverGroup maximumExecutionCount="1" name="LeaderEvents">
+          <Actors selectTriggeringEntities="false">
+            <EntityRef entityRef="leader"/>
+          </Actors>
+          <Maneuver name="LeaderVelocityManeuver">
+              <Event name="LeaderAccelerate1" priority="overwrite">
+                <Action name="LeaderAccelerate1">
+                  <PrivateAction>
+                    <LongitudinalAction>
+                      <SpeedAction>
+                        <SpeedActionDynamics dynamicsShape="linear" value="1.379" dynamicsDimension="rate"/>
+                        <SpeedActionTarget>
+                          <AbsoluteTargetSpeed value="17.500"/>
+                        </SpeedActionTarget>
+                      </SpeedAction>
+                    </LongitudinalAction>
+                  </PrivateAction>
+                </Action>
+                <StartTrigger>
+                  <ConditionGroup>
+                    <Condition name="StartAccelerate1" delay="0" conditionEdge="rising">
+                      <ByValueCondition>
+                        <SimulationTimeCondition value="0.500" rule="greaterThan"/>
+                      </ByValueCondition>
+                    </Condition>
+                  </ConditionGroup>
+                </StartTrigger>
+              </Event>
+              <Event name="LeaderBrake1" priority="overwrite">
+                <Action name="LeaderBrake1">
+                  <PrivateAction>
+                    <LongitudinalAction>
+                      <SpeedAction>
+                        <SpeedActionDynamics dynamicsShape="linear" value="5.490" dynamicsDimension="rate"/>
+                        <SpeedActionTarget>
+                          <AbsoluteTargetSpeed value="4.591"/>
+                        </SpeedActionTarget>
+                      </SpeedAction>
+                    </LongitudinalAction>
+                  </PrivateAction>
+                </Action>
+                <StartTrigger>
+                  <ConditionGroup>
+                    <Condition name="StartBrake1" delay="0" conditionEdge="rising">
+                      <ByValueCondition>
+                        <SimulationTimeCondition value="17.261" rule="greaterThan"/>
+                      </ByValueCondition>
+                    </Condition>
+                  </ConditionGroup>
+                </StartTrigger>
+              </Event>
+              <Event name="LeaderAccelerate2" priority="overwrite">
+                <Action name="LeaderAccelerate2">
+                  <PrivateAction>
+                    <LongitudinalAction>
+                      <SpeedAction>
+                        <SpeedActionDynamics dynamicsShape="linear" value="1.150" dynamicsDimension="rate"/>
+                        <SpeedActionTarget>
+                          <AbsoluteTargetSpeed value="17.500"/>
+                        </SpeedActionTarget>
+                      </SpeedAction>
+                    </LongitudinalAction>
+                  </PrivateAction>
+                </Action>
+                <StartTrigger>
+                  <ConditionGroup>
+                    <Condition name="StartAccelerate2" delay="0" conditionEdge="rising">
+                      <ByValueCondition>
+                        <SimulationTimeCondition value="25.483" rule="greaterThan"/>
+                      </ByValueCondition>
+                    </Condition>
+                  </ConditionGroup>
+                </StartTrigger>
+              </Event>
+              <Event name="LeaderBrake2" priority="overwrite">
+                <Action name="LeaderBrake2">
+                  <PrivateAction>
+                    <LongitudinalAction>
+                      <SpeedAction>
+                        <SpeedActionDynamics dynamicsShape="linear" value="3.846" dynamicsDimension="rate"/>
+                        <SpeedActionTarget>
+                          <AbsoluteTargetSpeed value="2.523"/>
+                        </SpeedActionTarget>
+                      </SpeedAction>
+                    </LongitudinalAction>
+                  </PrivateAction>
+                </Action>
+                <StartTrigger>
+                  <ConditionGroup>
+                    <Condition name="StartBrake2" delay="0" conditionEdge="rising">
+                      <ByValueCondition>
+                        <SimulationTimeCondition value="48.863" rule="greaterThan"/>
+                      </ByValueCondition>
+                    </Condition>
+                  </ConditionGroup>
+                </StartTrigger>
+              </Event>
+              <Event name="LeaderAccelerate3" priority="overwrite">
+                <Action name="LeaderAccelerate3">
+                  <PrivateAction>
+                    <LongitudinalAction>
+                      <SpeedAction>
+                        <SpeedActionDynamics dynamicsShape="linear" value="1.280" dynamicsDimension="rate"/>
+                        <SpeedActionTarget>
+                          <AbsoluteTargetSpeed value="20.000"/>
+                        </SpeedActionTarget>
+                      </SpeedAction>
+                    </LongitudinalAction>
+                  </PrivateAction>
+                </Action>
+                <StartTrigger>
+                  <ConditionGroup>
+                    <Condition name="StartAccelerate3" delay="0" conditionEdge="rising">
+                      <ByValueCondition>
+                        <SimulationTimeCondition value="57.781" rule="greaterThan"/>
+                      </ByValueCondition>
+                    </Condition>
+                  </ConditionGroup>
+                </StartTrigger>
+              </Event>
+              <Event name="LeaderBrake3" priority="overwrite">
+                <Action name="LeaderBrake3">
+                  <PrivateAction>
+                    <LongitudinalAction>
+                      <SpeedAction>
+                        <SpeedActionDynamics dynamicsShape="linear" value="5.116" dynamicsDimension="rate"/>
+                        <SpeedActionTarget>
+                          <AbsoluteTargetSpeed value="2.663"/>
+                        </SpeedActionTarget>
+                      </SpeedAction>
+                    </LongitudinalAction>
+                  </PrivateAction>
+                </Action>
+                <StartTrigger>
+                  <ConditionGroup>
+                    <Condition name="StartBrake3" delay="0" conditionEdge="rising">
+                      <ByValueCondition>
+                        <SimulationTimeCondition value="82.240" rule="greaterThan"/>
+                      </ByValueCondition>
+                    </Condition>
+                  </ConditionGroup>
+                </StartTrigger>
+              </Event>
+              <Event name="LeaderAccelerate4" priority="overwrite">
+                <Action name="LeaderAccelerate4">
+                  <PrivateAction>
+                    <LongitudinalAction>
+                      <SpeedAction>
+                        <SpeedActionDynamics dynamicsShape="linear" value="0.986" dynamicsDimension="rate"/>
+                        <SpeedActionTarget>
+                          <AbsoluteTargetSpeed value="15.000"/>
+                        </SpeedActionTarget>
+                      </SpeedAction>
+                    </LongitudinalAction>
+                  </PrivateAction>
+                </Action>
+                <StartTrigger>
+                  <ConditionGroup>
+                    <Condition name="StartAccelerate4" delay="0" conditionEdge="rising">
+                      <ByValueCondition>
+                        <SimulationTimeCondition value="90.037" rule="greaterThan"/>
+                      </ByValueCondition>
+                    </Condition>
+                  </ConditionGroup>
+                </StartTrigger>
+              </Event>
+              <Event name="LeaderBrake4" priority="overwrite">
+                <Action name="LeaderBrake4">
+                  <PrivateAction>
+                    <LongitudinalAction>
+                      <SpeedAction>
+                        <SpeedActionDynamics dynamicsShape="linear" value="5.052" dynamicsDimension="rate"/>
+                        <SpeedActionTarget>
+                          <AbsoluteTargetSpeed value="4.494"/>
+                        </SpeedActionTarget>
+                      </SpeedAction>
+                    </LongitudinalAction>
+                  </PrivateAction>
+                </Action>
+                <StartTrigger>
+                  <ConditionGroup>
+                    <Condition name="StartBrake4" delay="0" conditionEdge="rising">
+                      <ByValueCondition>
+                        <SimulationTimeCondition value="109.800" rule="greaterThan"/>
+                      </ByValueCondition>
+                    </Condition>
+                  </ConditionGroup>
+                </StartTrigger>
+              </Event>
+              <Event name="LeaderAccelerate5" priority="overwrite">
+                <Action name="LeaderAccelerate5">
+                  <PrivateAction>
+                    <LongitudinalAction>
+                      <SpeedAction>
+                        <SpeedActionDynamics dynamicsShape="linear" value="1.012" dynamicsDimension="rate"/>
+                        <SpeedActionTarget>
+                          <AbsoluteTargetSpeed value="15.000"/>
+                        </SpeedActionTarget>
+                      </SpeedAction>
+                    </LongitudinalAction>
+                  </PrivateAction>
+                </Action>
+                <StartTrigger>
+                  <ConditionGroup>
+                    <Condition name="StartAccelerate5" delay="0" conditionEdge="rising">
+                      <ByValueCondition>
+                        <SimulationTimeCondition value="115.768" rule="greaterThan"/>
+                      </ByValueCondition>
+                    </Condition>
+                  </ConditionGroup>
+                </StartTrigger>
+              </Event>
+              <Event name="LeaderBrake5" priority="overwrite">
+                <Action name="LeaderBrake5">
+                  <PrivateAction>
+                    <LongitudinalAction>
+                      <SpeedAction>
+                        <SpeedActionDynamics dynamicsShape="linear" value="3.613" dynamicsDimension="rate"/>
+                        <SpeedActionTarget>
+                          <AbsoluteTargetSpeed value="3.202"/>
+                        </SpeedActionTarget>
+                      </SpeedAction>
+                    </LongitudinalAction>
+                  </PrivateAction>
+                </Action>
+                <StartTrigger>
+                  <ConditionGroup>
+                    <Condition name="StartBrake5" delay="0" conditionEdge="rising">
+                      <ByValueCondition>
+                        <SimulationTimeCondition value="133.636" rule="greaterThan"/>
+                      </ByValueCondition>
+                    </Condition>
+                  </ConditionGroup>
+                </StartTrigger>
+              </Event>
+          </Maneuver>
+        </ManeuverGroup>
+        <StartTrigger>
+          <ConditionGroup>
+            <Condition name="ActStart" delay="0" conditionEdge="rising">
+              <ByValueCondition>
+                <SimulationTimeCondition value="0.1" rule="greaterThan"/>
+              </ByValueCondition>
+            </Condition>
+          </ConditionGroup>
+        </StartTrigger>
+        <StopTrigger>
+          <ConditionGroup>
+            <Condition name="ActStop" delay="0" conditionEdge="rising">
+              <ByValueCondition>
+                <SimulationTimeCondition value="146.111" rule="greaterThan"/>
+              </ByValueCondition>
+            </Condition>
+          </ConditionGroup>
+        </StopTrigger>
+      </Act>
+    </Story>
+    <StopTrigger>
+      <ConditionGroup>
+        <Condition name="ScenarioStop" delay="0" conditionEdge="rising">
+          <ByValueCondition>
+            <SimulationTimeCondition value="146.111" rule="greaterThan"/>
+          </ByValueCondition>
+        </Condition>
+      </ConditionGroup>
+    </StopTrigger>
+  </Storyboard>
+</OpenSCENARIO>

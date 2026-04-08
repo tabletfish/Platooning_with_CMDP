@@ -6,7 +6,7 @@ set -u
 cd /home/jungjinwoo/Platooning_with_CMDP
 : "${PLATOON_USE_ROS:=1}"
 : "${PLATOON_EVAL_EPISODES:=3}"
-: "${PLATOON_EVAL_MAX_STEPS:=20}"
+: "${PLATOON_EVAL_MAX_STEPS:=2000}"
 export PLATOON_USE_ROS PLATOON_EVAL_EPISODES PLATOON_EVAL_MAX_STEPS
 
 echo "===== PPO ====="

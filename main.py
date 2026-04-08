@@ -17,17 +17,9 @@ def _env_float(name: str, default: float) -> float:
 
 def main() -> None:
     steps_per_epoch = _env_int("PLATOON_STEPS_PER_EPOCH", 2000)
-    max_episode_steps = _env_int("PLATOON_MAX_EPISODE_STEPS", 1000)
-    if max_episode_steps > steps_per_epoch:
-        print(
-            "Adjusting PLATOON_MAX_EPISODE_STEPS from "
-            f"{max_episode_steps} to {steps_per_epoch} so PPOLag has "
-            "at least one completed episode before each update.",
-        )
-        max_episode_steps = steps_per_epoch
-        os.environ["PLATOON_MAX_EPISODE_STEPS"] = str(max_episode_steps)
+    algo = os.getenv("PLATOON_ALGO", "PPOLag")
 
-    custom_cfgs = {
+    custom_cfgs: dict = {
         "train_cfgs": {
             "total_steps": _env_int("PLATOON_TOTAL_STEPS", 1000000),
             "vector_env_nums": 1,
@@ -37,23 +29,25 @@ def main() -> None:
             "steps_per_epoch": steps_per_epoch,
             "update_iters": _env_int("PLATOON_UPDATE_ITERS", 10),
         },
-        "lagrange_cfgs": {
-            "cost_limit": _env_float("PLATOON_COST_LIMIT", 5.0),
-        },
         "logger_cfgs": {
             "use_wandb": False,
         },
     }
+    if "lag" in algo.lower():
+        custom_cfgs["lagrange_cfgs"] = {
+            "cost_limit": _env_float("PLATOON_COST_LIMIT", 5.0),
+        }
 
     print("======================================================")
-    print("PlatoonSafe-v0 PPOLag training")
+    print(f"PlatoonSafe-v0 {algo} training")
     print("ROS mode:", os.getenv("PLATOON_USE_ROS", "0"))
     print("Total steps:", custom_cfgs["train_cfgs"]["total_steps"])
-    print("Cost limit:", custom_cfgs["lagrange_cfgs"]["cost_limit"])
+    if "lagrange_cfgs" in custom_cfgs:
+        print("Cost limit:", custom_cfgs["lagrange_cfgs"]["cost_limit"])
     print("======================================================")
 
     agent = omnisafe.Agent(
-        "PPOLag",
+        algo,
         "PlatoonSafe-v0",
         custom_cfgs=custom_cfgs,
     )

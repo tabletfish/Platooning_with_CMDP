@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import csv
 from pathlib import Path
 
 import numpy as np
@@ -50,12 +51,25 @@ def evaluate_saved(save_dir: str | None = None, model_name: str | None = None) -
     policy = os.getenv("PLATOON_EVAL_POLICY", "ppo").lower()
     num_episodes = int(os.getenv("PLATOON_EVAL_EPISODES", "2"))
     max_steps = int(os.getenv("PLATOON_EVAL_MAX_STEPS", os.getenv("PLATOON_MAX_EPISODE_STEPS", "1000")))
+    trace_csv = os.getenv("PLATOON_EVAL_TRACE_CSV", "")
+    sb3_model = None
 
     actor = None
     run_dir = None
     resolved_model = None
     if policy == "ppo":
         actor, run_dir, resolved_model = _build_actor(Path(save_dir) if save_dir else None, model_name)
+    elif policy == "sb3":
+        try:
+            from stable_baselines3 import PPO as SB3PPO
+        except ImportError as exc:
+            raise SystemExit(
+                "stable-baselines3 is not installed. Install requirements or run: "
+                "python3.10 -m pip install stable-baselines3",
+            ) from exc
+        model_path = os.getenv("PLATOON_SB3_MODEL", "runs/SB3-PPO-{PlatoonSafe-v0}/ppo_platoon.zip")
+        sb3_model = SB3PPO.load(model_path)
+        resolved_model = model_path
     elif policy != "pid":
         raise ValueError(f"Unsupported PLATOON_EVAL_POLICY={policy}")
 
@@ -81,6 +95,7 @@ def evaluate_saved(save_dir: str | None = None, model_name: str | None = None) -
         "caution_duration": [],
         "danger_duration": [],
     }
+    trace_rows: list[dict[str, float | int | str | bool]] = []
 
     for episode in range(num_episodes):
         env = PlatoonSafeEnv("PlatoonSafe-v0")
@@ -103,6 +118,9 @@ def evaluate_saved(save_dir: str | None = None, model_name: str | None = None) -
                 with torch.no_grad():
                     action_tensor = actor.predict(obs, deterministic=True)
                 action = float(torch.as_tensor(action_tensor).reshape(-1)[0].item())
+            elif policy == "sb3":
+                action_np, _ = sb3_model.predict(np.asarray(obs, dtype=np.float32), deterministic=True)
+                action = float(np.asarray(action_np).reshape(-1)[0])
             else:
                 throttle, brake = controller.compute_control(
                     spacing_error=float(obs[0].item()),
@@ -110,7 +128,7 @@ def evaluate_saved(save_dir: str | None = None, model_name: str | None = None) -
                 )
                 action = float(throttle - brake)
 
-            next_obs, reward, cost, terminated, truncated, _ = env.step(
+            next_obs, reward, cost, terminated, truncated, info = env.step(
                 torch.tensor([action], dtype=torch.float32),
             )
 
@@ -133,6 +151,25 @@ def evaluate_saved(save_dir: str | None = None, model_name: str | None = None) -
             episode_length += 1
             prev_action = action
             obs = next_obs
+            if trace_csv:
+                trace_rows.append(
+                    {
+                        "policy": policy,
+                        "episode": episode,
+                        "step": episode_length,
+                        "reward": float(reward.item()),
+                        "cost": float(cost.item()),
+                        "episode_cost": episode_cost,
+                        "action": action,
+                        "spacing_error": delta_d,
+                        "rel_vel": delta_v,
+                        "ego_vel": float(next_obs[3].item()),
+                        "actual_distance": float(info.get("actual_distance", float("nan"))),
+                        "thw": float(info.get("thw", thw)),
+                        "terminated": bool(terminated.item()),
+                        "truncated": bool(truncated.item()),
+                    },
+                )
 
             if bool(terminated.item()) or bool(truncated.item()):
                 break
@@ -152,6 +189,14 @@ def evaluate_saved(save_dir: str | None = None, model_name: str | None = None) -
         print(f"Episode {episode + 1}: ret={episode_return:.3f}, cost={episode_cost:.3f}, len={episode_length}")
 
     summary = {name: float(np.mean(values)) for name, values in aggregate.items()}
+    if trace_csv:
+        trace_path = Path(trace_csv)
+        trace_path.parent.mkdir(parents=True, exist_ok=True)
+        with trace_path.open("w", newline="") as file:
+            writer = csv.DictWriter(file, fieldnames=list(trace_rows[0].keys()) if trace_rows else ["policy"])
+            writer.writeheader()
+            writer.writerows(trace_rows)
+        print("Trace CSV:", trace_path)
     print("Average metrics:")
     for key, value in summary.items():
         print(f"  {key}: {value}")

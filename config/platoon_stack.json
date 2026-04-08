@@ -3,7 +3,7 @@
   "fixed_delta_seconds": 0.05,
   "headway": 1.0,
   "standstill_distance": 7.0,
-  "leader_throttle": 0.35,
+  "leader_throttle": 1.0,
   "initial_gap": 15.0,
   "vehicles": [
     {

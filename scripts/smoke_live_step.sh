@@ -6,7 +6,8 @@ set -u
 cd /home/jungjinwoo/Platooning_with_CMDP
 PYTHON_BIN="${PYTHON_BIN:-python3.10}"
 PLATOON_USE_ROS=1 \
-PLATOON_MAX_EPISODE_STEPS=5 \
+PLATOON_MAX_EPISODE_STEPS=2000 \
+PLATOON_RESET_CARLA_ON_ENV_RESET=0 \
 "$PYTHON_BIN" - <<"PY"
 import time
 import torch

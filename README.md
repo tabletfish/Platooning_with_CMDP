@@ -25,6 +25,8 @@ cd /home/jungjinwoo/Platooning_with_CMDP
 ## live 실행 순서
 터미널 1:
 ```bash
+  cd /home/jungjinwoo/carla_0.9.16
+  ./CarlaUE4.sh 
 cd /home/jungjinwoo/Platooning_with_CMDP
 ./scripts/start_carla_ros2.sh
 ```

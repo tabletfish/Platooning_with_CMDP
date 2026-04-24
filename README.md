@@ -26,7 +26,13 @@ cd /home/jungjinwoo/Platooning_with_CMDP
 터미널 1:
 ```bash
   cd /home/jungjinwoo/carla_0.9.16
-  ./CarlaUE4.sh 
+  ./CarlaUE4.sh
+
+cd /home/jungjinwoo/carla_0.9.16
+./CarlaUE4.sh -quality-level=Low
+
+
+
 cd /home/jungjinwoo/Platooning_with_CMDP
 ./scripts/start_carla_ros2.sh
 ```
